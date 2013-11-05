@@ -722,6 +722,7 @@ public class CallCardFragment extends BaseFragment<CallCardPresenter, CallCardPr
 
         mVideoCallPanel.setVisibility(View.VISIBLE);
         mVideoCallPanel.setPanelElementsVisibility(callType);
+        mVideoCallPanel.startOrientationListener(true);
     }
 
     /**
@@ -737,6 +738,7 @@ public class CallCardFragment extends BaseFragment<CallCardPresenter, CallCardPr
             mPhoto.setVisibility(View.VISIBLE);
             mVideoCallPanel.setVisibility(View.GONE);
             mVideoCallPanel.setCameraNeeded(false);
+            mVideoCallPanel.startOrientationListener(false);
         }
     }
 
