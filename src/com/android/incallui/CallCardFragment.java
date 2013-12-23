@@ -18,9 +18,11 @@ package com.android.incallui;
 
 import android.animation.LayoutTransition;
 import android.content.Context;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -33,9 +35,11 @@ import android.view.accessibility.AccessibilityEvent;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.android.internal.util.mm.DeviceUtils;
 import com.android.services.telephony.common.Call;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Fragment for call card.
@@ -175,6 +179,38 @@ public class CallCardFragment extends BaseFragment<CallCardPresenter, CallCardPr
 
     }
 
+    public void setPrimaryPhoneNumber(String number, String location) {
+        // Set the number
+        if (TextUtils.isEmpty(number)) {
+            if (TextUtils.isEmpty(location)) {
+                mPhoneNumber.setText("");
+                mPhoneNumber.setVisibility(View.GONE);
+            } else {
+                mPhoneNumber.setText(location);
+                mPhoneNumber.setVisibility(View.VISIBLE);
+                mPhoneNumber.setTextDirection(View.TEXT_DIRECTION_LTR);
+            }
+        } else {
+            mPhoneNumber.setText(number);
+            mPhoneNumber.setVisibility(View.VISIBLE);
+            mPhoneNumber.setTextDirection(View.TEXT_DIRECTION_LTR);
+        }
+    }
+
+    public void setPrimaryLabel(String label, String location) {
+        if (!TextUtils.isEmpty(label)) {
+            if (!TextUtils.isEmpty(location)) {
+                mNumberLabel.setText(label + " " +location);
+            } else {
+                mNumberLabel.setText(label);
+            }
+            mNumberLabel.setVisibility(View.VISIBLE);
+        } else {
+            mNumberLabel.setVisibility(View.GONE);
+        }
+
+    }
+
     @Override
     public void setPrimary(String number, String name, boolean nameIsNumber, String label,
             Drawable photo, boolean isConference, boolean isGeneric,
@@ -187,13 +223,52 @@ public class CallCardFragment extends BaseFragment<CallCardPresenter, CallCardPr
             nameIsNumber = false;
         }
 
-        setPrimaryPhoneNumber(number);
+        //setPrimaryPhoneNumber(number);
 
         // set the name field.
         setPrimaryName(name, nameIsNumber);
 
         // Set the label (Mobile, Work, etc)
-        setPrimaryLabel(label);
+        //setPrimaryLabel(label);
+        final boolean isChineseLocale = (DeviceUtils.isLocale(Locale.CHINA) || DeviceUtils.isLocale(Locale.CHINESE));
+        
+        if ((isChineseLocale && !TextUtils.isEmpty(number)) || (isChineseLocale && nameIsNumber)) {
+            String num = !nameIsNumber ? number : name;
+
+            Log.d("==== mm.GeoLocation", String.format("Number is => %s", num));
+
+            num = (num.replace("-", "")).replace(" ", "");
+
+            Cursor cr = null;
+            try {
+                cr = this
+                        .getActivity()
+                        .getContentResolver()
+                        .query(Uri.parse("content://com.magicmod.mmgeoprovider/CN/" + num), null,
+                                null, null, null);
+                if (cr.moveToFirst()) {
+                    String location = cr.getString(0);
+
+                    setPrimaryPhoneNumber(!nameIsNumber ? number : "", location);
+                    // Set the label (Mobile, Work, etc) and location
+                    setPrimaryLabel(label, location);
+                } else {
+                    setPrimaryPhoneNumber(number);
+                    // Set the label (Mobile, Work, etc)
+                    setPrimaryLabel(label);
+                }
+            } catch (Exception e) {
+                // TODO: handle exception
+            } finally {
+                if (cr != null && !cr.isClosed()) {
+                    cr.close();
+                }
+            }
+        } else {
+            setPrimaryPhoneNumber(number);
+            // Set the label (Mobile, Work, etc)
+            setPrimaryLabel(label);
+        }
 
         showCallTypeLabel(isSipCall, isForwarded);
 
