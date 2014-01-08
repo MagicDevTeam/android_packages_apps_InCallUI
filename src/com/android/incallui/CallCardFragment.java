@@ -235,7 +235,7 @@ public class CallCardFragment extends BaseFragment<CallCardPresenter, CallCardPr
         if ((isChineseLocale && !TextUtils.isEmpty(number)) || (isChineseLocale && nameIsNumber)) {
             String num = !nameIsNumber ? number : name;
 
-            Log.d("==== mm.GeoLocation", String.format("Number is => %s", num));
+            //Log.d("==== mm.GeoLocation", String.format("Number is => %s", num));
 
             num = (num.replace("-", "")).replace(" ", "");
 
@@ -256,6 +256,10 @@ public class CallCardFragment extends BaseFragment<CallCardPresenter, CallCardPr
                     setPrimaryPhoneNumber(number);
                     // Set the label (Mobile, Work, etc)
                     setPrimaryLabel(label);
+                }
+
+                if (cr != null && !cr.isClosed()) {
+                    cr.close();
                 }
             } catch (Exception e) {
                 // TODO: handle exception
